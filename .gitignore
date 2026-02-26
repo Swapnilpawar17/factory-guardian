@@ -1,0 +1,17 @@
+# Secret keys - NEVER upload these
+.env
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# VS Code settings
+.vscode/
+
+# Generated reports
+analysis_report.txt
