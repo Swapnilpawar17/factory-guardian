@@ -1,9 +1,8 @@
 # ============================================
 # FACTORY GUARDIAN - Visual Dashboard
 # ============================================
-# This creates a beautiful web dashboard
-# showing machine health and predictions.
-# Run with: streamlit run dashboard.py
+# Version 3.0 - Uses FREE Groq AI
+# Works on both local computer AND Streamlit Cloud
 # ============================================
 
 import streamlit as st
@@ -13,9 +12,34 @@ import plotly.express as px
 from datetime import datetime
 import os
 from groq import Groq
-from dotenv import load_dotenv
 
-load_dotenv()
+# ============================================
+# HELPER: Get API keys (works locally AND on cloud)
+# ============================================
+def get_secret(key_name):
+    """
+    Gets secret keys from either:
+    - Streamlit Cloud secrets (when deployed)
+    - .env file (when running on your computer)
+    """
+    # First try Streamlit Cloud secrets
+    try:
+        return st.secrets[key_name]
+    except Exception:
+        pass
+
+    # Then try .env file (local development)
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+        value = os.getenv(key_name)
+        if value:
+            return value
+    except Exception:
+        pass
+
+    return None
+
 
 # ============================================
 # PAGE CONFIGURATION
@@ -38,33 +62,10 @@ st.markdown("""
         text-align: center;
         padding: 1rem;
     }
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        color: white;
+    .sub-header {
         text-align: center;
-    }
-    .alert-critical {
-        background-color: #ff4444;
-        color: white;
-        padding: 1rem;
-        border-radius: 10px;
-        font-weight: bold;
-    }
-    .alert-warning {
-        background-color: #ffaa00;
-        color: black;
-        padding: 1rem;
-        border-radius: 10px;
-        font-weight: bold;
-    }
-    .alert-normal {
-        background-color: #00C851;
-        color: white;
-        padding: 1rem;
-        border-radius: 10px;
-        font-weight: bold;
+        color: gray;
+        margin-bottom: 2rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -88,24 +89,23 @@ def calculate_health_score(data):
     """
     baseline = data.head(10)
     current = data.tail(3)
-    
+
     scores = []
-    
+
     for col in ['vibration_g', 'temperature_c', 'power_kw']:
         baseline_avg = baseline[col].mean()
         current_avg = current[col].mean()
         change = abs(current_avg - baseline_avg) / baseline_avg
-        # More change = lower score
         score = max(0, 100 - (change * 500))
         scores.append(score)
-    
+
     # Pressure is inverse (decrease is bad)
     baseline_pressure = baseline['pressure_bar'].mean()
     current_pressure = current['pressure_bar'].mean()
     pressure_change = abs(current_pressure - baseline_pressure) / baseline_pressure
     pressure_score = max(0, 100 - (pressure_change * 500))
     scores.append(pressure_score)
-    
+
     return round(sum(scores) / len(scores), 1)
 
 
@@ -120,11 +120,11 @@ def get_alert_level(health_score):
 
 
 def get_ai_analysis(data):
-    """Get AI analysis of the sensor data using FREE Groq"""
-    api_key = os.getenv('GROQ_API_KEY')
+    """Get AI analysis using FREE Groq API"""
+    api_key = get_secret('GROQ_API_KEY')
 
     if not api_key:
-        return "ERROR: GROQ_API_KEY not found in .env file. Get free key at https://console.groq.com/"
+        return "ERROR: GROQ_API_KEY not found. Please add it to your Streamlit Secrets or .env file.\n\nGet your free key at: https://console.groq.com/"
 
     client = Groq(api_key=api_key)
 
@@ -153,8 +153,8 @@ First readings (healthy baseline):
 {data_text}
 
 Include:
-1. Overall status (CRITICAL/WARNING/NORMAL)
-2. When failure is predicted (with confidence %)
+1. Overall status (CRITICAL / WARNING / NORMAL)
+2. When failure is predicted (with confidence percentage)
 3. Top 3 concerns with exact numbers
 4. Top 3 recommended actions in priority order
 5. Estimated cost savings in Indian Rupees
@@ -176,7 +176,7 @@ Be specific with numbers. Keep it concise but actionable."""
 
 # Header
 st.markdown('<div class="main-header">🏭 Factory Guardian</div>', unsafe_allow_html=True)
-st.markdown('<p style="text-align:center; color:gray;">Predictive Maintenance Dashboard — Sangli Manufacturing</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Predictive Maintenance Dashboard — Sangli Manufacturing</p>', unsafe_allow_html=True)
 
 st.divider()
 
@@ -185,7 +185,7 @@ st.sidebar.title("⚙️ Settings")
 st.sidebar.markdown("---")
 
 uploaded_file = st.sidebar.file_uploader(
-    "Upload Sensor Data (CSV)", 
+    "Upload Sensor Data (CSV)",
     type="csv",
     help="Upload a CSV with columns: timestamp, machine_id, machine_type, vibration_g, temperature_c, pressure_bar, power_kw, rpm"
 )
@@ -197,7 +197,7 @@ else:
         data = load_data("sensor_data.csv")
         st.sidebar.success("✅ Using default sensor_data.csv")
     except FileNotFoundError:
-        st.error("❌ No data file found. Please upload a CSV file.")
+        st.error("❌ No data file found. Please upload a CSV file using the sidebar.")
         st.stop()
 
 # Sidebar Info
@@ -208,6 +208,16 @@ st.sidebar.write(f"**Machines:** {data['machine_id'].nunique()}")
 st.sidebar.write(f"**Date Range:**")
 st.sidebar.write(f"  {data['timestamp'].min().strftime('%d %b %Y')}")
 st.sidebar.write(f"  to {data['timestamp'].max().strftime('%d %b %Y')}")
+
+# Check API key status
+api_key = get_secret('GROQ_API_KEY')
+if api_key:
+    st.sidebar.markdown("---")
+    st.sidebar.success("🤖 AI Engine: Connected")
+else:
+    st.sidebar.markdown("---")
+    st.sidebar.error("🤖 AI Engine: Not Connected")
+    st.sidebar.caption("Add GROQ_API_KEY to secrets")
 
 # ============================================
 # TOP METRICS ROW
@@ -231,7 +241,7 @@ with col2:
     st.metric(
         label="📳 Vibration",
         value=f"{current_vibration}g",
-        delta=f"{((current_vibration - baseline_vibration)/baseline_vibration)*100:.1f}%",
+        delta=f"{((current_vibration - baseline_vibration) / baseline_vibration) * 100:.1f}%",
         delta_color="inverse"
     )
 
@@ -241,7 +251,7 @@ with col3:
     st.metric(
         label="🌡️ Temperature",
         value=f"{current_temp}°C",
-        delta=f"{((current_temp - baseline_temp)/baseline_temp)*100:.1f}%",
+        delta=f"{((current_temp - baseline_temp) / baseline_temp) * 100:.1f}%",
         delta_color="inverse"
     )
 
@@ -251,7 +261,7 @@ with col4:
     st.metric(
         label="💨 Pressure",
         value=f"{current_pressure} bar",
-        delta=f"{((current_pressure - baseline_pressure)/baseline_pressure)*100:.1f}%",
+        delta=f"{((current_pressure - baseline_pressure) / baseline_pressure) * 100:.1f}%",
         delta_color="normal"
     )
 
@@ -263,21 +273,21 @@ st.markdown("---")
 if alert_level == "CRITICAL":
     st.error(f"""
     {alert_icon} **CRITICAL ALERT — {data['machine_id'].iloc[-1]} ({data['machine_type'].iloc[-1]})**
-    
-    Machine health score is **{health_score}/100**. Failure predicted within 48-72 hours. 
+
+    Machine health score is **{health_score}/100**. Failure predicted within 48-72 hours.
     Immediate inspection required.
     """)
 elif alert_level == "WARNING":
     st.warning(f"""
     {alert_icon} **WARNING — {data['machine_id'].iloc[-1]} ({data['machine_type'].iloc[-1]})**
-    
-    Machine health score is **{health_score}/100**. Degradation detected. 
+
+    Machine health score is **{health_score}/100**. Degradation detected.
     Schedule maintenance within 24-48 hours.
     """)
 else:
     st.success(f"""
     {alert_icon} **ALL NORMAL — {data['machine_id'].iloc[-1]} ({data['machine_type'].iloc[-1]})**
-    
+
     Machine health score is **{health_score}/100**. All parameters within normal range.
     """)
 
@@ -291,25 +301,23 @@ tab1, tab2, tab3, tab4 = st.tabs(["📳 Vibration", "🌡️ Temperature", "💨
 with tab1:
     fig_vib = go.Figure()
     fig_vib.add_trace(go.Scatter(
-        x=data['timestamp'], 
+        x=data['timestamp'],
         y=data['vibration_g'],
         mode='lines+markers',
         name='Vibration',
         line=dict(color='#ff6b6b', width=3),
         marker=dict(size=6)
     ))
-    # Add baseline
     baseline_vib = data['vibration_g'].head(10).mean()
     fig_vib.add_hline(
-        y=baseline_vib, 
-        line_dash="dash", 
+        y=baseline_vib,
+        line_dash="dash",
         line_color="green",
         annotation_text=f"Baseline: {baseline_vib:.2f}g"
     )
-    # Add danger zone
     fig_vib.add_hline(
-        y=2.0, 
-        line_dash="dash", 
+        y=2.0,
+        line_dash="dash",
         line_color="red",
         annotation_text="Danger: 2.0g"
     )
@@ -325,19 +333,19 @@ with tab1:
 with tab2:
     fig_temp = go.Figure()
     fig_temp.add_trace(go.Scatter(
-        x=data['timestamp'], 
+        x=data['timestamp'],
         y=data['temperature_c'],
         mode='lines+markers',
         name='Temperature',
         line=dict(color='#ffa502', width=3),
         marker=dict(size=6)
     ))
-    baseline_temp = data['temperature_c'].head(10).mean()
+    baseline_temp_val = data['temperature_c'].head(10).mean()
     fig_temp.add_hline(
-        y=baseline_temp, 
-        line_dash="dash", 
+        y=baseline_temp_val,
+        line_dash="dash",
         line_color="green",
-        annotation_text=f"Baseline: {baseline_temp:.0f}°C"
+        annotation_text=f"Baseline: {baseline_temp_val:.0f}°C"
     )
     fig_temp.update_layout(
         title="Temperature Trend",
@@ -351,7 +359,7 @@ with tab2:
 with tab3:
     fig_press = go.Figure()
     fig_press.add_trace(go.Scatter(
-        x=data['timestamp'], 
+        x=data['timestamp'],
         y=data['pressure_bar'],
         mode='lines+markers',
         name='Pressure',
@@ -360,14 +368,14 @@ with tab3:
     ))
     baseline_press = data['pressure_bar'].head(10).mean()
     fig_press.add_hline(
-        y=baseline_press, 
-        line_dash="dash", 
+        y=baseline_press,
+        line_dash="dash",
         line_color="green",
         annotation_text=f"Baseline: {baseline_press:.1f} bar"
     )
     fig_press.add_hline(
-        y=1.2, 
-        line_dash="dash", 
+        y=1.2,
+        line_dash="dash",
         line_color="red",
         annotation_text="Min Safe: 1.2 bar"
     )
@@ -383,7 +391,7 @@ with tab3:
 with tab4:
     fig_power = go.Figure()
     fig_power.add_trace(go.Scatter(
-        x=data['timestamp'], 
+        x=data['timestamp'],
         y=data['power_kw'],
         mode='lines+markers',
         name='Power',
@@ -392,8 +400,8 @@ with tab4:
     ))
     baseline_power = data['power_kw'].head(10).mean()
     fig_power.add_hline(
-        y=baseline_power, 
-        line_dash="dash", 
+        y=baseline_power,
+        line_dash="dash",
         line_color="green",
         annotation_text=f"Baseline: {baseline_power:.0f} kW"
     )
@@ -424,7 +432,7 @@ fig_corr.add_trace(go.Scatter(
         showscale=True,
         colorbar=dict(title="Day")
     ),
-    text=[f"Day {i+1}" for i in range(len(data))],
+    text=[f"Day {i + 1}" for i in range(len(data))],
     hovertemplate="Vibration: %{x}g<br>Temperature: %{y}°C<br>%{text}"
 ))
 fig_corr.update_layout(
@@ -450,12 +458,12 @@ for col in ['vibration_g', 'temperature_c', 'pressure_bar', 'power_kw']:
     b_mean = baseline[col].mean()
     b_std = baseline[col].std()
     c_mean = current[col].mean()
-    
+
     z = (c_mean - b_mean) / b_std if b_std > 0 else 0
     change_pct = ((c_mean - b_mean) / b_mean) * 100
-    
+
     status = "🔴 ANOMALY" if abs(z) > 2 else "🟢 Normal"
-    
+
     z_score_data.append({
         'Parameter': col.replace('_', ' ').title(),
         'Baseline Avg': round(b_mean, 2),
@@ -475,26 +483,38 @@ st.markdown("---")
 st.markdown("### 🤖 AI Expert Analysis")
 
 if st.button("🔍 Run AI Analysis", type="primary", use_container_width=True):
-    api_key = os.getenv('CLAUDE_API_KEY')
-    
+    api_key = get_secret('GROQ_API_KEY')
+
     if not api_key:
-        st.error("❌ Claude API key not found. Add CLAUDE_API_KEY to your .env file.")
+        st.error("""
+        ❌ **GROQ_API_KEY not found!**
+
+        **If running locally:**
+        Add `GROQ_API_KEY=gsk_yourkey` to your `.env` file
+
+        **If deployed on Streamlit Cloud:**
+        1. Go to your app settings (3 dots menu → Settings)
+        2. Click "Secrets" section
+        3. Add: `GROQ_API_KEY = "gsk_yourkey"`
+        4. Click Save and reboot app
+
+        **Get your free key at:** https://console.groq.com/
+        """)
     else:
-        with st.spinner("🤖 AI is analyzing sensor patterns... (10-30 seconds)"):
+        with st.spinner("🤖 AI is analyzing sensor patterns... (5-15 seconds)"):
             try:
                 analysis = get_ai_analysis(data)
-                st.markdown("#### Analysis Result:")
+                st.markdown("#### 📋 Analysis Result:")
                 st.markdown(analysis)
-                
-                # Save to session state
+
                 st.session_state['last_analysis'] = analysis
                 st.session_state['analysis_time'] = datetime.now().strftime("%d %b %Y, %I:%M %p")
-                
+
                 st.success(f"✅ Analysis completed at {st.session_state['analysis_time']}")
-                
+
             except Exception as e:
                 st.error(f"❌ Analysis failed: {str(e)}")
-                st.info("Check your API key and internet connection.")
+                st.info("💡 Check your GROQ_API_KEY and internet connection.")
 
 # Show last analysis if exists
 if 'last_analysis' in st.session_state:
@@ -511,33 +531,33 @@ col1, col2 = st.columns(2)
 
 with col1:
     downtime_cost = st.number_input(
-        "Daily Downtime Cost (₹)", 
-        value=50000, 
+        "Daily Downtime Cost (₹)",
+        value=50000,
         step=5000,
         help="How much does 1 day of machine downtime cost you?"
     )
     avg_repair_unplanned = st.number_input(
-        "Avg Unplanned Repair Cost (₹)", 
-        value=200000, 
+        "Avg Unplanned Repair Cost (₹)",
+        value=200000,
         step=10000
     )
 
 with col2:
     avg_repair_planned = st.number_input(
-        "Avg Planned Repair Cost (₹)", 
-        value=80000, 
+        "Avg Planned Repair Cost (₹)",
+        value=80000,
         step=10000
     )
     avg_downtime_days = st.number_input(
-        "Avg Unplanned Downtime (Days)", 
-        value=4, 
+        "Avg Unplanned Downtime (Days)",
+        value=4,
         step=1
     )
 
 unplanned_cost = (downtime_cost * avg_downtime_days) + avg_repair_unplanned
-planned_cost = (downtime_cost * 1) + avg_repair_planned  # 1 day for planned
+planned_cost = (downtime_cost * 1) + avg_repair_planned
 savings_per_incident = unplanned_cost - planned_cost
-annual_savings = savings_per_incident * 6  # assume 6 prevented incidents/year
+annual_savings = savings_per_incident * 6
 
 st.markdown("#### 📊 Projected Savings")
 
@@ -557,7 +577,7 @@ st.metric("🎯 Estimated Annual Savings (6 incidents)", f"₹{annual_savings:,.
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: gray; padding: 1rem;'>
-    🏭 Factory Guardian v1.0 | Predictive Maintenance AI<br>
+    🏭 Factory Guardian v3.0 | Predictive Maintenance AI | Powered by Groq<br>
     Built for Sangli Manufacturers | © 2025
 </div>
 """, unsafe_allow_html=True)
