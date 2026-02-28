@@ -1,0 +1,18 @@
+credentials:
+  usernames:
+    admin:
+      email: admin@factoryguardian.com
+      name: Admin User
+      password: $2b$12$8tJyVz3KMIq8Xa0LTtRrOeNQHBMHKHGZp1cKyDvBxTqfGxzKXmZOq
+    omkar_foundry:
+      email: omkar@example.com
+      name: Omkar Foundries
+      password: $2b$12$8tJyVz3KMIq8Xa0LTtRrOeNQHBMHKHGZp1cKyDvBxTqfGxzKXmZOq
+    taysons:
+      email: taysons@example.com
+      name: Taysons Castings
+      password: $2b$12$8tJyVz3KMIq8Xa0LTtRrOeNQHBMHKHGZp1cKyDvBxTqfGxzKXmZOq
+cookie:
+  expiry_days: 30
+  key: factory_guardian_secret_key_12345
+  name: factory_guardian_auth
