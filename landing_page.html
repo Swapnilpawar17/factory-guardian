@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factory Guardian — Predict Machine Failures Before They Happen</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            background: #1E3A5F;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+        }
+        nav .logo { color: white; font-size: 1.5rem; font-weight: bold; }
+        nav .logo span { color: #4fc3f7; }
+        nav a { 
+            color: white; background: #4fc3f7; padding: 10px 25px; 
+            border-radius: 5px; text-decoration: none; font-weight: bold; 
+        }
+        nav a:hover { background: #039be5; }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #1E3A5F 0%, #0d47a1 100%);
+            color: white;
+            padding: 8rem 2rem 5rem;
+            text-align: center;
+        }
+        .hero h1 { font-size: 3rem; margin-bottom: 1rem; }
+        .hero h1 span { color: #4fc3f7; }
+        .hero p { font-size: 1.3rem; max-width: 700px; margin: 0 auto 2rem; opacity: 0.9; }
+        .hero .cta-btn {
+            display: inline-block; background: #ff6b35; color: white;
+            padding: 15px 40px; font-size: 1.2rem; border-radius: 8px;
+            text-decoration: none; font-weight: bold; margin: 0.5rem;
+            transition: transform 0.2s;
+        }
+        .hero .cta-btn:hover { transform: scale(1.05); }
+        .hero .cta-secondary {
+            background: transparent; border: 2px solid white;
+        }
+
+        /* Stats Bar */
+        .stats {
+            display: flex; justify-content: center; gap: 3rem;
+            padding: 2rem; background: #f8f9fa; flex-wrap: wrap;
+        }
+        .stat { text-align: center; }
+        .stat .number { font-size: 2.5rem; font-weight: bold; color: #1E3A5F; }
+        .stat .label { color: #666; font-size: 0.9rem; }
+
+        /* Features */
+        .features {
+            padding: 4rem 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .features h2 { text-align: center; font-size: 2rem; margin-bottom: 3rem; color: #1E3A5F; }
+        .feature-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .feature-card {
+            background: white; padding: 2rem; border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            border-top: 4px solid #1E3A5F;
+        }
+        .feature-card .icon { font-size: 2.5rem; margin-bottom: 1rem; }
+        .feature-card h3 { color: #1E3A5F; margin-bottom: 0.5rem; }
+
+        /* How It Works */
+        .how-it-works {
+            background: #f0f4ff; padding: 4rem 2rem;
+        }
+        .how-it-works h2 { text-align: center; font-size: 2rem; margin-bottom: 3rem; color: #1E3A5F; }
+        .steps {
+            display: flex; justify-content: center; gap: 2rem;
+            max-width: 1000px; margin: 0 auto; flex-wrap: wrap;
+        }
+        .step {
+            text-align: center; flex: 1; min-width: 200px;
+            background: white; padding: 2rem; border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .step .number-circle {
+            width: 50px; height: 50px; background: #1E3A5F; color: white;
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; margin: 0 auto 1rem;
+            font-size: 1.3rem; font-weight: bold;
+        }
+
+        /* Savings */
+        .savings {
+            padding: 4rem 2rem; text-align: center;
+            background: linear-gradient(135deg, #1E3A5F, #0d47a1);
+            color: white;
+        }
+        .savings h2 { font-size: 2rem; margin-bottom: 1rem; }
+        .savings .amount { font-size: 3.5rem; font-weight: bold; color: #4fc3f7; }
+        .savings p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 1rem auto; }
+
+        /* Pricing */
+        .pricing { padding: 4rem 2rem; max-width: 1000px; margin: 0 auto; }
+        .pricing h2 { text-align: center; font-size: 2rem; margin-bottom: 3rem; color: #1E3A5F; }
+        .pricing-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+        .price-card {
+            border: 2px solid #e0e0e0; border-radius: 10px;
+            padding: 2rem; text-align: center;
+        }
+        .price-card.featured {
+            border-color: #1E3A5F; position: relative;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .price-card.featured::before {
+            content: "MOST POPULAR";
+            position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            background: #ff6b35; color: white; padding: 4px 15px;
+            border-radius: 20px; font-size: 0.75rem; font-weight: bold;
+        }
+        .price-card h3 { color: #1E3A5F; font-size: 1.3rem; }
+        .price-card .price { font-size: 2.5rem; font-weight: bold; color: #1E3A5F; margin: 1rem 0; }
+        .price-card .price span { font-size: 1rem; color: #666; }
+        .price-card ul { list-style: none; text-align: left; margin: 1rem 0; }
+        .price-card ul li { padding: 0.4rem 0; }
+        .price-card ul li::before { content: "✅ "; }
+        .price-card .btn {
+            display: inline-block; padding: 12px 30px; border-radius: 5px;
+            text-decoration: none; font-weight: bold; margin-top: 1rem;
+            background: #1E3A5F; color: white;
+        }
+
+        /* Testimonial */
+        .testimonial {
+            background: #f8f9fa; padding: 4rem 2rem; text-align: center;
+        }
+        .testimonial blockquote {
+            font-size: 1.3rem; font-style: italic; max-width: 700px;
+            margin: 0 auto; color: #555;
+        }
+        .testimonial .author { margin-top: 1rem; font-weight: bold; color: #1E3A5F; }
+
+        /* CTA */
+        .final-cta {
+            padding: 4rem 2rem; text-align: center;
+            background: white;
+        }
+        .final-cta h2 { font-size: 2rem; color: #1E3A5F; margin-bottom: 1rem; }
+        .final-cta .cta-btn {
+            display: inline-block; background: #ff6b35; color: white;
+            padding: 15px 40px; font-size: 1.2rem; border-radius: 8px;
+            text-decoration: none; font-weight: bold;
+        }
+
+        /* Footer */
+        footer {
+            background: #1E3A5F; color: white; padding: 2rem;
+            text-align: center; font-size: 0.9rem;
+        }
+        footer a { color: #4fc3f7; text-decoration: none; }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .stats { gap: 1.5rem; }
+            .stat .number { font-size: 1.8rem; }
+            nav { padding: 0.8rem 1rem; }
+            nav .logo { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">🏭 Factory <span>Guardian</span></div>
+        <a href="https://factory-guardian.streamlit.app" target="_blank">Live Dashboard →</a>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <h1>Predict Machine Failures <span>Before</span> They Happen</h1>
+        <p>AI-powered predictive maintenance for foundries and sugar mills. 
+           Get alerts 48-72 hours before breakdowns. Save ₹3-5 Lakh per incident.</p>
+        <a href="https://factory-guardian.streamlit.app" class="cta-btn" target="_blank">
+            See Live Demo →
+        </a>
+        <a href="#pricing" class="cta-btn cta-secondary">View Pricing</a>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+        <div class="stat">
+            <div class="number">85%</div>
+            <div class="label">Prediction Accuracy</div>
+        </div>
+        <div class="stat">
+            <div class="number">48-72hr</div>
+            <div class="label">Advance Warning</div>
+        </div>
+        <div class="stat">
+            <div class="number">₹3-5L</div>
+            <div class="label">Saved Per Incident</div>
+        </div>
+        <div class="stat">
+            <div class="number">30%</div>
+            <div class="label">Downtime Reduction</div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+        <h2>Why Factory Owners Choose Us</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="icon">📊</div>
+                <h3>Real-Time Monitoring</h3>
+                <p>Track vibration, temperature, pressure, and power draw across all your machines from one dashboard. Accessible from your phone.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🤖</div>
+                <h3>AI Failure Prediction</h3>
+                <p>Our AI analyzes sensor patterns and predicts failures 48-72 hours in advance with 85% accuracy. No more surprise breakdowns.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">📱</div>
+                <h3>Instant Alerts</h3>
+                <p>Get Telegram, Email, and SMS alerts the moment our AI detects trouble. Know exactly what's wrong and what to do.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🔧</div>
+                <h3>Action Recommendations</h3>
+                <p>Not just alerts — specific maintenance actions prioritized by urgency. "Inspect bearings" instead of "something is wrong."</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">💰</div>
+                <h3>Cost Savings Tracking</h3>
+                <p>See exactly how much money each prediction saves you. Track ROI monthly. Typical factories save ₹20-40 Lakh annually.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🏭</div>
+                <h3>Built for Indian Factories</h3>
+                <p>Designed specifically for foundries, sugar mills, and manufacturing plants. Works with your existing sensors — no expensive upgrades.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <h2>How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="number-circle">1</div>
+                <h3>Connect Sensors</h3>
+                <p>We connect to your existing machine sensors. No new hardware needed in most cases.</p>
+            </div>
+            <div class="step">
+                <div class="number-circle">2</div>
+                <h3>AI Learns Patterns</h3>
+                <p>Our AI studies your machine's normal behavior and learns what "healthy" looks like.</p>
+            </div>
+            <div class="step">
+                <div class="number-circle">3</div>
+                <h3>Detect Anomalies</h3>
+                <p>When patterns deviate from normal, the system flags it immediately with specific diagnosis.</p>
+            </div>
+            <div class="step">
+                <div class="number-circle">4</div>
+                <h3>Prevent Failures</h3>
+                <p>You get alerts with exact actions to take, 48-72 hours before breakdown. Fix it on your schedule.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Savings -->
+    <section class="savings">
+        <h2>Average Annual Savings Per Factory</h2>
+        <div class="amount">₹24,00,000</div>
+        <p>Based on preventing 6 major breakdowns per year, each costing ₹4 Lakh in repair + downtime. 
+           Our subscription pays for itself in the first month.</p>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <h2>Simple, Transparent Pricing</h2>
+        <div class="pricing-grid">
+            <div class="price-card">
+                <h3>Starter</h3>
+                <div class="price">₹10K<span>/month</span></div>
+                <ul>
+                    <li>Up to 3 machines</li>
+                    <li>Dashboard access</li>
+                    <li>Telegram alerts</li>
+                    <li>Weekly AI reports</li>
+                    <li>Email support</li>
+                </ul>
+                <a href="#contact" class="btn">Start Free Pilot</a>
+            </div>
+            <div class="price-card featured">
+                <h3>Professional</h3>
+                <div class="price">₹25K<span>/month</span></div>
+                <ul>
+                    <li>Up to 8 machines</li>
+                    <li>Everything in Starter</li>
+                    <li>Daily AI reports</li>
+                    <li>Root cause analysis</li>
+                    <li>Phone support</li>
+                    <li>Monthly review meeting</li>
+                </ul>
+                <a href="#contact" class="btn">Start Free Pilot</a>
+            </div>
+            <div class="price-card">
+                <h3>Enterprise</h3>
+                <div class="price">₹50K<span>/month</span></div>
+                <ul>
+                    <li>Unlimited machines</li>
+                    <li>Everything in Professional</li>
+                    <li>On-site sensor setup</li>
+                    <li>Custom integrations</li>
+                    <li>Dedicated account manager</li>
+                    <li>SLA guarantee</li>
+                </ul>
+                <a href="#contact" class="btn">Contact Us</a>
+            </div>
+        </div>
+        <p style="text-align: center; margin-top: 2rem; color: #666;">
+            🎯 <strong>30-Day Money-Back Guarantee.</strong> If we don't find real issues, you don't pay.
+        </p>
+    </section>
+
+    <!-- Testimonial -->
+    <section class="testimonial">
+        <blockquote>
+            "Factory Guardian predicted a furnace coil failure 3 days before it happened. 
+            We saved ₹4.2 Lakh in emergency repairs and avoided 5 days of downtime. 
+            Best investment we've made this year."
+        </blockquote>
+        <div class="author">— Manufacturing Plant Owner, Sangli</div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="final-cta" id="contact">
+        <h2>Start Your Free 7-Day Pilot</h2>
+        <p style="color: #666; margin-bottom: 2rem; font-size: 1.1rem;">
+            No cost. No risk. We connect to your machines and show you real predictions.<br>
+            If we don't find any issues worth ₹50,000 — you pay nothing.
+        </p>
+        <a href="https://factory-guardian.streamlit.app" class="cta-btn" target="_blank">
+            Launch Live Demo →
+        </a>
+        <p style="margin-top: 1.5rem; color: #666;">
+            📞 Call: <strong>+91 XXXXX XXXXX</strong> | 
+            📧 Email: <strong>hello@factoryguardian.in</strong>
+        </p>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>🏭 Factory Guardian | AI-Powered Predictive Maintenance</p>
+        <p>Built for Indian Manufacturers | © 2025</p>
+        <p style="margin-top: 0.5rem;">
+            <a href="https://factory-guardian.streamlit.app">Dashboard</a> |
+            <a href="https://github.com/YOUR-USERNAME/factory-guardian">GitHub</a>
+        </p>
+    </footer>
+
+</body>
+</html>

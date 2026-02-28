@@ -15,3 +15,7 @@ Thumbs.db
 
 # Generated reports
 analysis_report.txt
+
+daily_report.html
+
+sensor_data_live.csv
